@@ -14,7 +14,7 @@ def strip_date_and_split_time(timestamps):
         hours.append(dt.hour)
         minutes.append(dt.minute)
         seconds.append(dt.second)
-    
+ 
     return hours, minutes, seconds
 
 def normalize_time(datetime_objects):
@@ -25,7 +25,7 @@ def normalize_time(datetime_objects):
         delta = dt - start_time
         total_seconds = delta.total_seconds()
         normalized_times.append(total_seconds)
-    
+
     return normalized_times
 
 def format_time(seconds):
@@ -39,22 +39,22 @@ def main():
     parser.add_argument('file_name', type=str, help='The string to be processed')
     args = parser.parse_args()
     fit_file_string = args.file_name
-    
+ 
     fitfile = fitparse.FitFile(fit_file_string)
-    
+
     timestamps = []
     speeds = []
-    
+
     for record in fitfile.get_messages("record"):
         for data in record:
             if data.name == "enhanced_speed":
                 speeds.append(data.value)
             if data.name == "timestamp":
                 timestamps.append(data.value)
-    
+
     hours, minutes, seconds = strip_date_and_split_time(timestamps)
     normalized_times = normalize_time(timestamps)
-    
+
     paces = [60 / (speed * 60 * 60 / 1000) for speed in speeds]
     paces_minutes = [int(pace) for pace in paces]
     paces_seconds = [(pace - int(pace)) * 60 for pace in paces]
@@ -90,4 +90,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

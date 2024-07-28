@@ -4,16 +4,16 @@ import fitparse
 def main():
     # Create the argument parser
     parser = argparse.ArgumentParser(description="Process some strings.")
-    
+ 
     # Add an argument to parse a string
     parser.add_argument('file_name', type=str, help='The string to be processed')
-    
+
     # Parse the arguments
     args = parser.parse_args()
-    
+
     # Access the parsed string
     fit_file_string = args.file_name
-    
+
     # Load the FIT file
     fitfile = fitparse.FitFile(fit_file_string)
 
@@ -34,4 +34,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
