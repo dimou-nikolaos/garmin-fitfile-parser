@@ -4,4 +4,4 @@ matplotlib
 mplcursors
 gmplot
 folium
-
+geopy
