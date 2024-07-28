@@ -1,3 +1,4 @@
+[![Pylint](https://github.com/dimou-nikolaos/garmin-fitfile-parser/actions/workflows/pylint.yml/badge.svg)](https://github.com/dimou-nikolaos/garmin-fitfile-parser/actions/workflows/pylint.yml)
 # garmin-fitfile-parser
 
 Parser for Garmin's fitfiles
