@@ -1,10 +1,12 @@
+"""Fitfile segments parser"""
 import argparse
 import fitparse
 
 def main():
+    """Main function"""
     # Create the argument parser
     parser = argparse.ArgumentParser(description="Process some strings.")
- 
+
     # Add an argument to parse a string
     parser.add_argument('file_name', type=str, help='The string to be processed')
 
@@ -26,9 +28,9 @@ def main():
 
             # Print the name and value of the data (and the units if it has any)
             if data.units:
-                print(" * {}: {} ({})".format(data.name, data.value, data.units))
+                print(f" * {data.name}: {data.value} ({data.units})")
             else:
-                print(" * {}: {}".format(data.name, data.value))
+                print(f" * {data.name}: {data.value}")
 
         print("---")
 
