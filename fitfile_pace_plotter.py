@@ -1,23 +1,8 @@
 """fitfile pace plotter"""
 import argparse
-import fitparse
-from datetime import datetime
 import matplotlib.pyplot as plt
 import mplcursors
-
-def strip_date_and_split_time(timestamps):
-    """Function that strips date and splits time"""
-    hours = []
-    minutes = []
-    seconds = []
-
-    for timestamp in timestamps:
-        dt = timestamp
-        hours.append(dt.hour)
-        minutes.append(dt.minute)
-        seconds.append(dt.second)
-
-    return hours, minutes, seconds
+import fitparse
 
 def normalize_time(datetime_objects):
     """Function that normalizes time - subtracts starting time"""
@@ -57,13 +42,11 @@ def main():
             if data.name == "timestamp":
                 timestamps.append(data.value)
 
-    hours, minutes, seconds = strip_date_and_split_time(timestamps)
     normalized_times = normalize_time(timestamps)
 
     paces = [60 / (speed * 60 * 60 / 1000) for speed in speeds]
     paces_minutes = [int(pace) for pace in paces]
     paces_seconds = [(pace - int(pace)) * 60 for pace in paces]
-    paces_combined = [f"{int(pace)}:{int((pace - int(pace)) * 60):02d}" for pace in paces]
 
     formatted_times = [format_time(t) for t in normalized_times]
 
