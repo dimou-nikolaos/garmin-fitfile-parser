@@ -13,7 +13,7 @@ sudo apt install python3.10-venv
 - Create and activate virtual environment:
 ```
 python3 -m venv env
-.\env\Scripts\activate
+source env\bin\activate
 ```
 
 - Install requirements:
