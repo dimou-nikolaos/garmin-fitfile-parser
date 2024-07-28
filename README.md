@@ -39,3 +39,9 @@ Run:
 ```
 python3 fitfile_pace_plotter.py <path_to_fitfile>
 ```
+
+## How to deactivate virtual environment
+Run:
+```
+deactivate
+```
