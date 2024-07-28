@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import mplcursors
 import fitparse
 from gmplot import gmplot
+import folium
 
 def normalize_time(datetime_objects):
     """Function that normalizes time - subtracts starting time"""
@@ -116,7 +117,20 @@ def create_map_html(latitude, longitude):
         gmap.marker(latitude[i], longitude[i], 'cornflowerblue')
 
     # Draw map into HTML file
-    gmap.draw("my_map.html")
+    gmap.draw("activity_on_google_map.html")
+
+def create_folium_map(latitude, longitude):
+    """Creates map using folium"""
+
+    # Initialize the map at a given point
+    map=folium.Map(location=[latitude[1], longitude[1]])
+
+    for i in range(1, len(latitude)):
+        # Add a marker
+        map.add_child(folium.Marker(location=[latitude[i], longitude[i]]))
+
+    # save map
+    map.save("activity_on_folium_map.html")
 
 def main():
     """Main function"""
@@ -131,6 +145,9 @@ def main():
 
     # Draw activity on map in html
     create_map_html(latitude, longitude)
+
+    # Create folium map
+    create_folium_map(latitude, longitude)
 
     normalized_times = normalize_time(timestamps)
     paces = [60 / (speed * 60 * 60 / 1000) for speed in speeds]
