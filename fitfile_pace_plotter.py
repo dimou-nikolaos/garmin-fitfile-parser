@@ -1,3 +1,4 @@
+"""fitfile pace plotter"""
 import argparse
 import fitparse
 from datetime import datetime
@@ -5,6 +6,7 @@ import matplotlib.pyplot as plt
 import mplcursors
 
 def strip_date_and_split_time(timestamps):
+    """Function that strips date and splits time"""
     hours = []
     minutes = []
     seconds = []
@@ -14,10 +16,11 @@ def strip_date_and_split_time(timestamps):
         hours.append(dt.hour)
         minutes.append(dt.minute)
         seconds.append(dt.second)
- 
+
     return hours, minutes, seconds
 
 def normalize_time(datetime_objects):
+    """Function that normalizes time - subtracts starting time"""
     start_time = datetime_objects[0]
     normalized_times = []
 
@@ -29,17 +32,19 @@ def normalize_time(datetime_objects):
     return normalized_times
 
 def format_time(seconds):
+    """Function that formats the time"""
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     seconds = int(seconds % 60)
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 def main():
+    """Main function"""
     parser = argparse.ArgumentParser(description="Process some strings.")
     parser.add_argument('file_name', type=str, help='The string to be processed')
     args = parser.parse_args()
     fit_file_string = args.file_name
- 
+
     fitfile = fitparse.FitFile(fit_file_string)
 
     timestamps = []
