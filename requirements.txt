@@ -3,4 +3,5 @@ fitparse
 matplotlib
 mplcursors
 gmplot
+folium
 
