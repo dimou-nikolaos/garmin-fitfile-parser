@@ -1,5 +1,3 @@
-#!/bin/python3
-
 import argparse
 import fitparse
 from datetime import datetime
