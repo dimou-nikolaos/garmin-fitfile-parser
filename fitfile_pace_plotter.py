@@ -50,6 +50,7 @@ def main():
 
     formatted_times = [format_time(t) for t in normalized_times]
 
+    # pylint: disable-unused-argument
     fig, ax = plt.subplots(figsize=(10, 5))
     scatter = ax.scatter(normalized_times, paces, marker='o')
     ax.set_xlabel('Time [hh:mm:ss]')
