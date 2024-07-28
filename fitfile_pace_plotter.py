@@ -1,23 +1,11 @@
+"""fitfile pace plotter"""
 import argparse
-import fitparse
-from datetime import datetime
 import matplotlib.pyplot as plt
 import mplcursors
-
-def strip_date_and_split_time(timestamps):
-    hours = []
-    minutes = []
-    seconds = []
-
-    for timestamp in timestamps:
-        dt = timestamp
-        hours.append(dt.hour)
-        minutes.append(dt.minute)
-        seconds.append(dt.second)
-    
-    return hours, minutes, seconds
+import fitparse
 
 def normalize_time(datetime_objects):
+    """Function that normalizes time - subtracts starting time"""
     start_time = datetime_objects[0]
     normalized_times = []
 
@@ -25,43 +13,44 @@ def normalize_time(datetime_objects):
         delta = dt - start_time
         total_seconds = delta.total_seconds()
         normalized_times.append(total_seconds)
-    
+
     return normalized_times
 
 def format_time(seconds):
+    """Function that formats the time"""
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     seconds = int(seconds % 60)
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 def main():
+    """Main function"""
     parser = argparse.ArgumentParser(description="Process some strings.")
     parser.add_argument('file_name', type=str, help='The string to be processed')
     args = parser.parse_args()
     fit_file_string = args.file_name
-    
+
     fitfile = fitparse.FitFile(fit_file_string)
-    
+
     timestamps = []
     speeds = []
-    
+
     for record in fitfile.get_messages("record"):
         for data in record:
             if data.name == "enhanced_speed":
                 speeds.append(data.value)
             if data.name == "timestamp":
                 timestamps.append(data.value)
-    
-    hours, minutes, seconds = strip_date_and_split_time(timestamps)
+
     normalized_times = normalize_time(timestamps)
-    
+
     paces = [60 / (speed * 60 * 60 / 1000) for speed in speeds]
     paces_minutes = [int(pace) for pace in paces]
     paces_seconds = [(pace - int(pace)) * 60 for pace in paces]
-    paces_combined = [f"{int(pace)}:{int((pace - int(pace)) * 60):02d}" for pace in paces]
 
     formatted_times = [format_time(t) for t in normalized_times]
 
+    # pylint: disable-unused-argument
     fig, ax = plt.subplots(figsize=(10, 5))
     scatter = ax.scatter(normalized_times, paces, marker='o')
     ax.set_xlabel('Time [hh:mm:ss]')
@@ -90,4 +79,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
