@@ -43,9 +43,9 @@ def calculate_paces_seconds(paces):
 def plot_paces(normalized_times, paces, my_paces, my_pace_normalized, formatted_times, paces_minutes, paces_seconds, my_paces_minutes, my_paces_seconds, my_paces_normalized_minutes, my_paces_normalized_seconds):
     """Plot paces over time"""
     fig, ax = plt.subplots(figsize=(10, 5))
-    scatter1 = ax.scatter(normalized_times, paces, marker='o', label='Original Paces')
-    scatter2 = ax.scatter(normalized_times, my_paces, marker='x', label='My Paces')
-    scatter3 = ax.scatter(normalized_times, my_pace_normalized, marker='*', label='My Paces Normalized')
+    scatter1 = ax.scatter(normalized_times, paces, marker='o', color='red', label='Original Paces')
+    scatter2 = ax.scatter(normalized_times, my_paces, marker='o', color='blue', label='My Paces')
+    scatter3 = ax.scatter(normalized_times, my_pace_normalized, marker='o', color='green', label='My Paces Normalized')
 
     ax.set_xlabel('Time [hh:mm:ss]')
     ax.set_ylabel('Pace [min:sec per km]')
@@ -67,7 +67,7 @@ def plot_paces(normalized_times, paces, my_paces, my_pace_normalized, formatted_
         f"{formatted_times[sel.target.index]}\n"
         f"Original: {paces_minutes[sel.target.index]}:{int(paces_seconds[sel.target.index]):02d} min/km\n"
         f"My Pace: {my_paces_minutes[sel.target.index]}:{int(my_paces_seconds[sel.target.index]):02d} min/km\n"
-        f"My Pace: {my_paces_normalized_minutes[sel.target.index]}:{int(my_paces_normalized_seconds[sel.target.index]):02d} min/km"
+        f"My Pace normalized: {my_paces_normalized_minutes[sel.target.index]}:{int(my_paces_normalized_seconds[sel.target.index]):02d} min/km"
     ))
 
     plt.show()
@@ -77,7 +77,7 @@ def create_map_html(latitude, longitude):
     """Creates html with activity on Google Maps"""
 
     # Initialize the map at a given point
-    gmap = gmplot.GoogleMapPlotter(latitude[1], longitude[1], 14, 'cornflowerblue')
+    gmap = gmplot.GoogleMapPlotter(latitude[0], longitude[0], 14, 'cornflowerblue')
 
     for i in range(1, len(latitude)):
         # Add a marker
@@ -121,13 +121,15 @@ def main():
     my_paces_seconds = calculate_paces_seconds(my_pace)
 
     #normalize
-    my_pace_normalized = my_pace
-    ROLLING_WINDOW = 5
+    my_pace_normalized = [0] * len(my_pace)
+    ROLLING_WINDOW = 20
     for i in range(ROLLING_WINDOW):
-        my_pace_normalized.append(0)
+        my_pace_normalized[i] = 0
 
-    for i in range(ROLLING_WINDOW-1, len(my_pace_normalized)):
-        my_pace_normalized.append(sum(my_pace[i:i-ROLLING_WINDOW]))
+    for i in range(ROLLING_WINDOW-1, len(my_pace)):
+        for j in range(ROLLING_WINDOW):
+            my_pace_normalized[i] += my_pace[i-j]
+        my_pace_normalized[i] /=ROLLING_WINDOW
     my_paces_normalized_minutes = calculate_paces_minutes(my_pace_normalized)
     my_paces_normalized_seconds = calculate_paces_seconds(my_pace_normalized)
 
@@ -136,6 +138,7 @@ def main():
 
     # Create folium map
     create_folium_map(latitude, longitude)
+    
 
     normalized_times = normalize_time(timestamps)
     paces = [60 / (speed * 60 * 60 / 1000) for speed in speeds]
@@ -143,8 +146,6 @@ def main():
     paces_seconds = calculate_paces_seconds(paces)
 
     formatted_times = [format_time(t) for t in normalized_times]
-
-    print (len(strides), len(my_pace), len(my_pace_normalized), len(my_paces_minutes), len(my_paces_normalized_minutes))
 
     plot_paces(normalized_times, paces, my_pace ,my_pace_normalized, formatted_times, paces_minutes, paces_seconds, my_paces_minutes, my_paces_seconds, my_paces_normalized_minutes, my_paces_normalized_seconds)
 
