@@ -1,9 +1,18 @@
 import argparse
 import matplotlib.pyplot as plt
 import mplcursors
-import fitparse
 from gmplot import gmplot
 import folium
+import geopy.distance
+
+from fitfile_parser import (
+    parse_fitfile,
+    parse_fitfile_timestamps,
+    parse_fitfile_speeds,
+    parse_fitfile_longitude,
+    parse_fitfile_latitude,
+    parse_fitfile_altitude
+    )
 
 def normalize_time(datetime_objects):
     """Function that normalizes time - subtracts starting time"""
@@ -23,71 +32,26 @@ def parse_arguments():
     parser.add_argument('file_name', type=str, help='The FIT file to be processed')
     return parser.parse_args()
 
-def parse_fitfile_timestamps(fitfile):
-    """Parse timestamps from the FIT file"""
-    timestamps = []
-    for record in fitfile.get_messages("record"):
-        for data in record:
-            if data.name == "timestamp":
-                timestamps.append(data.value)
-    return timestamps
-
-def parse_fitfile_speeds(fitfile):
-    """Parse speeds from the FIT file"""
-    speeds = []
-    for record in fitfile.get_messages("record"):
-        for data in record:
-            if data.name == "enhanced_speed":
-                speeds.append(data.value)
-    return speeds
-
-def parse_fitfile_longitude(fitfile):
-    """Parse longitude from the FIT file"""
-    longitude = []
-    for record in fitfile.get_messages("record"):
-        for data in record:
-            if data.name == "position_long":
-                # convert semicycles to degrees
-                longitude.append(data.value * ( 180 / 2**31))
-    return longitude
-
-def parse_fitfile_latitude(fitfile):
-    """Parse latitude from the FIT file"""
-    latitude = []
-    for record in fitfile.get_messages("record"):
-        for data in record:
-            if data.name == "position_lat":
-                # convert semicycles to degrees
-                latitude.append(data.value * ( 180 / 2**31))
-    return latitude
-
-def parse_fitfile_altitude(fitfile):
-    """Parse altitude from the FIT file"""
-    altitude = []
-    for record in fitfile.get_messages("record"):
-        for data in record:
-            if data.name == "enhanced_altitude":
-                # convert semicycles to degrees
-                altitude.append(data.value)
-    return altitude
-
-def calculate_paces_minutes(speeds):
+def calculate_paces_minutes(paces):
     """Calculate paces in minutes per km"""
-    paces = [60 / (speed * 60 * 60 / 1000) for speed in speeds]
     return [int(pace) for pace in paces]
 
 def calculate_paces_seconds(paces):
     """Calculate paces in seconds"""
     return [(pace - int(pace)) * 60 for pace in paces]
 
-def plot_paces(normalized_times, paces, formatted_times, paces_minutes, paces_seconds):
+def plot_paces(normalized_times, paces, my_paces, my_pace_normalized, formatted_times, paces_minutes, paces_seconds, my_paces_minutes, my_paces_seconds, my_paces_normalized_minutes, my_paces_normalized_seconds):
     """Plot paces over time"""
     fig, ax = plt.subplots(figsize=(10, 5))
-    scatter = ax.scatter(normalized_times, paces, marker='o')
+    scatter1 = ax.scatter(normalized_times, paces, marker='o', color='red', label='Original Paces')
+    scatter2 = ax.scatter(normalized_times, my_paces, marker='o', color='blue', label='My Paces')
+    scatter3 = ax.scatter(normalized_times, my_pace_normalized, marker='o', color='green', label='My Paces Normalized')
+
     ax.set_xlabel('Time [hh:mm:ss]')
     ax.set_ylabel('Pace [min:sec per km]')
     ax.set_title('Pace over Time')
     ax.grid(True)
+    ax.legend()
 
     num_ticks = min(10, len(normalized_times))  # Limit to 10 or fewer ticks
     tick_positions = normalized_times[::max(1, len(normalized_times) // num_ticks)]
@@ -98,19 +62,22 @@ def plot_paces(normalized_times, paces, formatted_times, paces_minutes, paces_se
 
     ax.invert_yaxis()
 
-    cursor = mplcursors.cursor(scatter, hover=True)
+    cursor = mplcursors.cursor([scatter1, scatter2, scatter3], hover=True)
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f"{formatted_times[sel.target.index]}\n"
-        f"{paces_minutes[sel.target.index]}:{int(paces_seconds[sel.target.index]):02d} min/km"
+        f"Original: {paces_minutes[sel.target.index]}:{int(paces_seconds[sel.target.index]):02d} min/km\n"
+        f"My Pace: {my_paces_minutes[sel.target.index]}:{int(my_paces_seconds[sel.target.index]):02d} min/km\n"
+        f"My Pace normalized: {my_paces_normalized_minutes[sel.target.index]}:{int(my_paces_normalized_seconds[sel.target.index]):02d} min/km"
     ))
 
     plt.show()
+
 
 def create_map_html(latitude, longitude):
     """Creates html with activity on Google Maps"""
 
     # Initialize the map at a given point
-    gmap = gmplot.GoogleMapPlotter(latitude[1], longitude[1], 14, 'cornflowerblue')
+    gmap = gmplot.GoogleMapPlotter(latitude[0], longitude[0], 14, 'cornflowerblue')
 
     for i in range(1, len(latitude)):
         # Add a marker
@@ -135,28 +102,52 @@ def create_folium_map(latitude, longitude):
 def main():
     """Main function"""
     args = parse_arguments()
-    fitfile = fitparse.FitFile(args.file_name)
 
-    timestamps = parse_fitfile_timestamps(fitfile)
-    speeds = parse_fitfile_speeds(fitfile)
-    altitude = parse_fitfile_altitude(fitfile)
-    latitude = parse_fitfile_latitude(fitfile)
-    longitude = parse_fitfile_longitude(fitfile)
+    timestamps, speeds, altitude, latitude, longitude = parse_fitfile(args.file_name)
+
+    strides = []
+    # add manually one element to match other arrays
+    strides.append(0)
+    for elem in range(1, len(latitude)):
+	    coord0=(latitude[elem-1], longitude[elem-1])
+	    coord1=(latitude[elem], longitude[elem])
+	    strides.append(geopy.distance.geodesic(coord0, coord1).m)
+
+    my_pace = []
+    my_pace.append(0)
+    for elem in range(1, len(strides)):
+        my_pace.append(1000/(60*strides[elem]))
+    my_paces_minutes = calculate_paces_minutes(my_pace)
+    my_paces_seconds = calculate_paces_seconds(my_pace)
+
+    #normalize
+    my_pace_normalized = [0] * len(my_pace)
+    ROLLING_WINDOW = 20
+    for i in range(ROLLING_WINDOW):
+        my_pace_normalized[i] = 0
+
+    for i in range(ROLLING_WINDOW-1, len(my_pace)):
+        for j in range(ROLLING_WINDOW):
+            my_pace_normalized[i] += my_pace[i-j]
+        my_pace_normalized[i] /=ROLLING_WINDOW
+    my_paces_normalized_minutes = calculate_paces_minutes(my_pace_normalized)
+    my_paces_normalized_seconds = calculate_paces_seconds(my_pace_normalized)
 
     # Draw activity on map in html
     create_map_html(latitude, longitude)
 
     # Create folium map
     create_folium_map(latitude, longitude)
+    
 
     normalized_times = normalize_time(timestamps)
     paces = [60 / (speed * 60 * 60 / 1000) for speed in speeds]
-    paces_minutes = calculate_paces_minutes(speeds)
+    paces_minutes = calculate_paces_minutes(paces)
     paces_seconds = calculate_paces_seconds(paces)
 
     formatted_times = [format_time(t) for t in normalized_times]
 
-    plot_paces(normalized_times, paces, formatted_times, paces_minutes, paces_seconds)
+    plot_paces(normalized_times, paces, my_pace ,my_pace_normalized, formatted_times, paces_minutes, paces_seconds, my_paces_minutes, my_paces_seconds, my_paces_normalized_minutes, my_paces_normalized_seconds)
 
 if __name__ == "__main__":
     main()
